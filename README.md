@@ -1,5 +1,5 @@
 # Windows 10 WhatsApp to Taskbar Tray
-Basically minimize your WhatsApp window to tray
+Basically, minimize your WhatsApp window to tray and let it run background
 
 # How to download
 - [Download Here](https://github.com/Zigatronz/Windows-10-WhatsApp-to-Taskbar-Tray/releases)
