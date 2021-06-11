@@ -18,4 +18,7 @@ Basically minimize your WhatsApp window to tray
 2. Run WhatsApp via Explorer.exe
 ## Do tray thing
 1. Detect WhatsApp minimize, then hide WhatsApp window and show tray
-2. Double click tray, then reshow WhatsApp window
+2. Double click tray, then reshow WhatsApp window and rehide tray
+## Exit
+- If WhatsApp process not exist, then this process will close
+- If exit from tray, WhatsApp will also close
