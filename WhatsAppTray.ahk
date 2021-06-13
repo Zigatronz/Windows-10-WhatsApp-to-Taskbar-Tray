@@ -1,4 +1,5 @@
 
+; Initialize
 #SingleInstance Force
 DetectHiddenWindows, On
 SetTitleMatchMode, 3
@@ -11,17 +12,28 @@ if (!GetWhatsAppWindowPID()){
 WhatsAppPID := GetWhatsAppWindowPID()
 Gosub, ShowWhatsApp
 InitTray()
+; Do tray things
+WhatsAppWinInactiveTime := 0 ; for performance
 Loop
 {
-    if (!WhatsAppWinHide){
-        ExitWhenWhatsAppExit()
-        Sleep 500
-        WhatsAppMinimizedDetector()
-        Sleep 500
+    ; check if WhatsApp exit
+    ExitWhenWhatsAppExit()
+    Sleep, % AddSleepTime + 250
+    ; check if WhatsApp minimized
+    WhatsAppMinimizedDetector()
+    Sleep, % AddSleepTime + 250
+    ; for performance
+    AddSleepTime := 0
+    if (WhatsAppTrayEnable)
+        AddSleepTime += 1250
+    Else{
+        if (WhatsAppWinInactiveTime > 2){
+            AddSleepTime += 750
+        }
         if (WhatsAppPID != GetActiveWinPID())
-            Sleep, 1000 ; for performance
-    }Else{
-        Sleep 3000 ; also for performance
+            WhatsAppWinInactiveTime ++
+        Else
+            WhatsAppWinInactiveTime := 0
     }
 }
 
@@ -45,8 +57,11 @@ WhatsAppMinimizedDetector(){
     global
     local WinState
     WinGet, WinState, MinMax, WhatsApp ahk_pid %WhatsAppPID% ahk_exe WhatsApp.exe ahk_class Chrome_WidgetWin_1
-    if (WinState == -1){
+    if (WinState == -1){ ; If minimized
         WhatsAppWinShow(False)
+    }Else{
+        if(WhatsAppTrayEnable)
+            WhatsAppTrayShow(False)
     }
 }
 
@@ -54,18 +69,29 @@ WhatsAppWinShow(show){
     global
     if (show){
         WinShow, WhatsApp ahk_pid %WhatsAppPID% ahk_exe WhatsApp.exe ahk_class Chrome_WidgetWin_1
-        WhatsAppWinHide := False
         WinActivate, WhatsApp ahk_pid %WhatsAppPID% ahk_exe WhatsApp.exe ahk_class Chrome_WidgetWin_1
-        Menu, Tray, NoIcon
+        WhatsAppTrayShow(False)
     }Else{
-        Menu, Tray, Icon
         WinHide, WhatsApp ahk_pid %WhatsAppPID% ahk_exe WhatsApp.exe ahk_class Chrome_WidgetWin_1
-        WhatsAppWinHide := True
+        WhatsAppTrayShow(True)
+    }
+}
+
+WhatsAppTrayShow(show){
+    global
+    if (show){
+        Menu, Tray, Icon
+        WhatsAppTrayEnable := True
+    }Else{
+        Menu, Tray, NoIcon
+        WhatsAppTrayEnable := False
     }
 }
 
 InitTray(){
     global
+    if (!A_IsCompiled)
+        Menu, Tray, Icon, % A_ScriptDir . "\Icon\WhatsApp.ico"
     Menu, Tray, Tip, % TrayTitle
     Menu, Tray, NoStandard
     Menu, Tray, Add, WhatsApp Desktop, ShowWhatsApp
@@ -75,7 +101,9 @@ InitTray(){
 
 StartWhatsApp(){
     local InstallLocation, PackageFamilyName, runOutputPID
+    ; Get WhatsApp's package data
     GetWhatsApp_AppxPackageData(InstallLocation, PackageFamilyName)
+    ; Run WhatsApp
     Run, % "explorer.exe shell:appsFolder\" . PackageFamilyName . "!" . GetWhatsApp_ApplicationID(InstallLocation),,,runOutputPID
     WinWait, ahk_pid %runOutputPID%, , 3
     if (WinExist("ahk_pid " . runOutputPID)){
@@ -88,9 +116,10 @@ StartWhatsApp(){
 GetWhatsApp_AppxPackageData(ByRef InstallLocation, ByRef PackageFamilyName){
     local TempFile := A_ScriptDir . "\appxpackage.temp", debugOut, Quotation
     Quotation = "
+    ; Write Get-AppxPackage to TempFile
     Loop
     {
-        RunWait, % A_ComSpec . " /c powershell get-appxpackage > " . Quotation . TempFile . Quotation,,Hide
+        RunWait, % A_ComSpec . " /c powershell Get-AppxPackage -Name *What* > " . Quotation . TempFile . Quotation,,Hide
         IfNotExist, % TempFile
         {
             debugOut := Debug(2, 2, "Run PowerShell error", "PowerShell doesn't return Get-AppxPackage or create " TempFile, 0x000101)
@@ -102,6 +131,7 @@ GetWhatsApp_AppxPackageData(ByRef InstallLocation, ByRef PackageFamilyName){
             Break
         }
     }
+    ; Get InstallLocation and PackageFamilyName in TempFile
     Loop, Read, % TempFile
     {
         if (IsStrContainsStr(A_LoopReadLine, ["InstallLocation","\WindowsApps\","WhatsAppDesktop"])){
@@ -114,6 +144,7 @@ GetWhatsApp_AppxPackageData(ByRef InstallLocation, ByRef PackageFamilyName){
             Break
         }
     }
+    ; Delete TempFile
     FileDelete, % TempFile
 }
 
