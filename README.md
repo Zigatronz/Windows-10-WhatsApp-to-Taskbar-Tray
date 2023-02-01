@@ -25,3 +25,6 @@ Basically, minimize your WhatsApp window to tray and let it run on background.
 ## Exit
 - Exits when WhatsApp exits
 - Exits WhatsApp via tray menu
+
+# NEED HELP!!
+This software is no longer work due to WhatsApp UI update recently. The UI is now using Windows Application Frame Window which is I do able to hide the window but I can't completely hide it as the taskbar icon remains. Detail explanation on [stackoverflow](https://stackoverflow.com/questions/74001810).
